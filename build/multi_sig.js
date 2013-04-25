@@ -108,7 +108,7 @@
   };
 
   createMultiSig = function(nReq, keys) {
-    var addrInt, b, bpk, hashed, key, midHashed, rs, _i, _j, _len, _len1;
+    var addressHex, addressStart, b, bpk, checksum, key, rs, _i, _j, _len, _len1;
     if (nReq >= 2 && nReq <= 16) {
       rs = [0x50 + nReq];
       for (_i = 0, _len = keys.length; _i < _len; _i++) {
@@ -122,14 +122,16 @@
       }
       rs.push(0x50 + keys.length);
       rs.push(0xAE);
-      midHashed = "\x05" + hash("ripemd160", hash("sha256", String.fromCharCode.apply(String, rs)));
-      hashed = hash("sha256", hash("sha256", midHashed));
-      addrInt = strToHex(midHashed + hashed.substr(0, 4));
+      addressStart = "\x05" + hash("ripemd160", hash("sha256", String.fromCharCode.apply(String, rs)));
+      checksum = hash("sha256", hash("sha256", addressStart)).substr(0, 4);
+      addressHex = strToHex(addressStart + checksum);
       return {
         redeemScript: bytesToHex(rs),
-        address: encodeBase58(addrInt)
+        address: encodeBase58(addressHex)
       };
     }
   };
+
+  console.log(createMultiSig(2, ["0491bba2510912a5bd37da1fb5b1673010e43d2c6d812c514e91bfa9f2eb129e1c183329db55bd868e209aac2fbc02cb33d98fe74bf23f0c235d6126b1d8334f86", "04865c40293a680cb9c020e7b1e106d8c1916d3cef99aa431a56d253e69256dac09ef122b1a986818a7cb624532f062c1d1f8722084861c5c3291ccffef4ec6874", "048d2455d2403e08708fc1f556002f1b6cd83f992d085097f9974ab08a28838f07896fbab08f39495e15fa6fad6edbfb1e754e35fa1c7844c41f322a1863d46213"]));
 
 }).call(this);

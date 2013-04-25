@@ -1,24 +1,8 @@
 Crypto = require('crypto')
 BigNum = require('bignum')
-Base58 = require('base58')
 
 hash = (algo, data) ->
     Crypto.createHash(algo).update(data).digest("binary")
-
-bytesToInt = (bytes) ->
-    intVal = 0
-    for i in [(bytes.length - 1)..0]
-        intVal = (intVal * 256) + bytes[i]
-    return intVal
-
-bigIntegerFromByteArray = (bytes) ->
-    if bytes.length
-        if bytes[0] & 128
-            return new BigInteger([0].concat(bytes))
-        else
-            new BigInteger(bytes)
-    else
-        bytes.valueOf(0)
 
 decodeHex = (hex) ->
     val = BigNum('0')

@@ -70,6 +70,12 @@ publicKeyToBtcAddress() {
     )
 }
 
+publicKeyToHex() {
+    openssl ec -pubout -in ${PRIVKEY} -outform DER |
+    tail -c 65 |
+    hexdump -e '1/1 "%02X"'
+}
+
 hash256ToAddress() {   
    #printf "80$1$(checksum "80$1")"
     printf "%34s\n" "$(encodeBase58 "80$1$(checksum "80$1")")" |
@@ -91,18 +97,15 @@ done
 
 openssl ec -text -noout -in ${PRIVKEY} | head -5 | tail -3 | fmt -120 | sed 's/[: ]//g' > /dev/null
 
-import_key=$(privateKeyToWIF)
-
 btc_address=$(openssl ec -pubout -in ${PRIVKEY} | publicKeyToBtcAddress)
 
 checkBitcoinAddress
 
-echo ${import_key} > ${btc_address}.key
-openssl ec -pubout -in ${PRIVKEY} > ${btc_address}.pub
+# Save the private and public Bitcoin keys.
+privateKeyToWIF > ${btc_address}.key
+publicKeyToHex > ${btc_address}.pub
 
 # overwrite key file with a new key and remove from memory.
-#
-
 openssl ecparam -genkey -name secp256k1 | tee ${PRIVKEY} &>/dev/null && rm ${PRIVKEY}
 
 exit 0

@@ -86,24 +86,31 @@ privateKeyToWIF() {
     hash256ToAddress $(openssl ec -text -noout -in ${PRIVKEY} | head -5 | tail -3 | fmt -120 | sed 's/[: ]//g')
 }
 
-openssl  ecparam -genkey -name secp256k1 | tee ${PRIVKEY} &>/dev/null
+generateKey() {
+    openssl  ecparam -genkey -name secp256k1 | tee ${PRIVKEY} &>/dev/null
 
-hexsize=$(openssl ec -text -noout -in ${PRIVKEY} | head -5 | tail -3 | fmt -120 | sed 's/[: ]//g' ) 
+    hexsize=$(openssl ec -text -noout -in ${PRIVKEY} | head -5 | tail -3 | fmt -120 | sed 's/[: ]//g' ) 
 
-while [ ${#hexsize} -ne 64 ]
+    while [ ${#hexsize} -ne 64 ]
+    do
+    openssl  ecparam -genkey -name secp256k1 | tee ${PRIVKEY} &>/dev/null && hexsize=$(openssl ec -text -noout -in ${PRIVKEY} | head -5 | tail -3 | fmt -120 | sed 's/[: ]//g' ) 
+    done
+
+    openssl ec -text -noout -in ${PRIVKEY} | head -5 | tail -3 | fmt -120 | sed 's/[: ]//g' > /dev/null
+
+    btc_address=$(openssl ec -pubout -in ${PRIVKEY} | publicKeyToBtcAddress)
+
+    checkBitcoinAddress
+
+    # Save the private and public Bitcoin keys.
+    privateKeyToWIF > ${btc_address}.key
+    publicKeyToHex > ${btc_address}.pub
+}
+
+for ((i=0;i<${1-1};i++))
 do
-openssl  ecparam -genkey -name secp256k1 | tee ${PRIVKEY} &>/dev/null && hexsize=$(openssl ec -text -noout -in ${PRIVKEY} | head -5 | tail -3 | fmt -120 | sed 's/[: ]//g' ) 
+    generateKey 
 done
-
-openssl ec -text -noout -in ${PRIVKEY} | head -5 | tail -3 | fmt -120 | sed 's/[: ]//g' > /dev/null
-
-btc_address=$(openssl ec -pubout -in ${PRIVKEY} | publicKeyToBtcAddress)
-
-checkBitcoinAddress
-
-# Save the private and public Bitcoin keys.
-privateKeyToWIF > ${btc_address}.key
-publicKeyToHex > ${btc_address}.pub
 
 # overwrite key file with a new key and remove from memory.
 openssl ecparam -genkey -name secp256k1 | tee ${PRIVKEY} &>/dev/null && rm ${PRIVKEY}

@@ -5,35 +5,40 @@ lazy = require 'lazy'
 
 exports.BitcoinClient = new bitcoin.Client(config.host, config.port, config.username, config.password)
 
-exports.createTransactionFromLine = (line, cb) ->
-    # Creates a transaction from a string containing the sending and receiving
-    # addresses, as well as the amount to send.
-    # Expected line format:
-    # <sending address> <receiving address> <amount>
-    # Each sending address should have a private key file in the keyDir.
-    
-    line = line.split ' '
-    fs.readFile(config.keyDir + line[0] + '.key', 'utf8', (err, data) ->
-        txnDetails = {}
-        txnDetails[line[1]] = parseInt line[2]
-        
-        inputs = []
-        for txnID in line[3..]
-            inputs.push { txid: txnID, vout: 0}
-        
-        exports.BitcoinClient.createRawTransaction inputs, txnDetails, (err, txn) ->
-            exports.BitcoinClient.signRawTransaction txn, [], [data], (err, signedTxn) ->
-                cb signedTxn.hex
+exports.createTransaction = (fromAddress, toAddresses, fromTransactions,
+privKeyCB, txnCB) ->
+    # Creates a transaction using the specified transaction JSON and callbacks.
+    # txnJSON must have a fromAddress string, a toAddresses array of objects,
+    # and a fromTransactions array of transaction IDs.
+    exports.BitcoinClient.createRawTransaction(fromTransactions, toAddresses, 
+    (err, txn) ->
+        if err
+            console.log err
+            
+        privKeyCB fromAddress, (privKey) ->
+            exports.BitcoinClient.signRawTransaction txn, [], [privKey], (err, signedTxn) ->
+                if err
+                    console.log err
+                    
+                txnCB signedTxn.hex
     )
-
+    
 # Was this passed a command line argument?
 # If so, run it like a command line utility.
 if process.argv.length > 2
+    _signWithPrivateKey = (fromAddress, signTxn) ->
+        fs.readFile(config.keyDir + fromAddress + '.key', 'utf8', (err, data) ->
+            signTxn data
+        )
+            
+    _saveSignedTransaction = (fromAddress)->
+        return (signedTxn) ->
+            fs.writeFile config.txnDir + fromAddress + '.txn', signedTxn
 
-    # Grab each line in the passed-in file and create transactions in the
+    # Grab each object in the passed-in JSON file and create transactions in the
     # txnDir directory specified in config.json.
-    file = new lazy fs.createReadStream(process.argv[2])
-    file.lines.forEach (line) ->
-        line = line.toString()
-        exports.createTransactionFromLine line, (txn) ->
-            fs.writeFile config.txnDir + line.replace(/\ /g, '_') + '.txn', txn
+    transactions = require process.argv[2]
+    for fromAddress, transaction of transactions
+        exports.createTransaction( fromAddress, transaction.toAddresses,
+        transaction.fromTransactions, _signWithPrivateKey,
+        _saveSignedTransaction(fromAddress))

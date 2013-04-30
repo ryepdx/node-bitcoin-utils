@@ -1,0 +1,8 @@
+{
+    host: 'localhost',
+    port: 8332,
+    username: 'RPC_USERNAME',
+    password: 'RPC_PASSWORD',
+    keyDir: '/PATH/TO/PRIVATE/KEY/FILES',
+    txnDir: '/PATH/FOR/TRANSACTION/OUTPUT',
+}

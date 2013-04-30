@@ -8,9 +8,13 @@ lib-cov
 *.gz
 *.pub
 *.key
+*.txn
 
+keys
+txns
 pids
 logs
 results
 
 npm-debug.log
+config.json

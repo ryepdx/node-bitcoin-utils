@@ -16,7 +16,12 @@ exports.createTransactionFromLine = (line, cb) ->
     fs.readFile(config.keyDir + line[0] + '.key', 'utf8', (err, data) ->
         txnDetails = {}
         txnDetails[line[1]] = parseInt line[2]
-        exports.BitcoinClient.createRawTransaction [], txnDetails, (err, txn) ->
+        
+        inputs = []
+        for txnID in line[3..]
+            inputs.push { txid: txnID, vout: 0}
+        
+        exports.BitcoinClient.createRawTransaction inputs, txnDetails, (err, txn) ->
             exports.BitcoinClient.signRawTransaction txn, [], [data], (err, signedTxn) ->
                 cb signedTxn.hex
     )

@@ -15,10 +15,19 @@
   exports.createTransactionFromLine = function(line, cb) {
     line = line.split(' ');
     return fs.readFile(config.keyDir + line[0] + '.key', 'utf8', function(err, data) {
-      var txnDetails;
+      var inputs, txnDetails, txnID, _i, _len, _ref;
       txnDetails = {};
       txnDetails[line[1]] = parseInt(line[2]);
-      return exports.BitcoinClient.createRawTransaction([], txnDetails, function(err, txn) {
+      inputs = [];
+      _ref = line.slice(3);
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        txnID = _ref[_i];
+        inputs.push({
+          txid: txnID,
+          vout: 0
+        });
+      }
+      return exports.BitcoinClient.createRawTransaction(inputs, txnDetails, function(err, txn) {
         return exports.BitcoinClient.signRawTransaction(txn, [], [data], function(err, signedTxn) {
           return cb(signedTxn.hex);
         });
